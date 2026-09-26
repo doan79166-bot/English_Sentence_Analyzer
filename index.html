@@ -8,7 +8,6 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
     <div class="max-w-4xl mx-auto space-y-6">
-        <!-- Header -->
         <header class="flex justify-between items-center bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
             <h1 class="text-xl font-bold text-indigo-400">🌲 English Sentence Analyzer</h1>
             <div class="flex gap-2">
@@ -21,7 +20,6 @@
             </div>
         </header>
 
-        <!-- Input Section -->
         <main class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
             <label class="block text-sm font-medium text-slate-300">Nhập câu tiếng Anh cần phân tích:</label>
             <textarea id="inputText" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ví dụ: It is slow to get rich."></textarea>
@@ -34,7 +32,6 @@
             </div>
         </main>
 
-        <!-- Result Section -->
         <section id="resultArea" class="hidden bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
             <h2 class="text-lg font-bold text-emerald-400">Kết Quả Phân Tích</h2>
             <div id="output" class="p-4 bg-slate-900 rounded-lg text-sm font-mono whitespace-pre-wrap border border-slate-700"></div>
@@ -44,10 +41,10 @@
     <script>
         function setApiKey() {
             const currentKey = localStorage.getItem('GEMINI_API_KEY') || '';
-            const key = prompt('Nhập Gemini API Key của bạn:', currentKey);
+            const key = prompt('Nhập Gemini API Key từ Google AI Studio:', currentKey);
             if (key !== null) {
                 localStorage.setItem('GEMINI_API_KEY', key.trim());
-                alert('Đã lưu API Key thành công!');
+                alert('Đã lưu API Key!');
             }
         }
 
@@ -62,63 +59,63 @@
             }
 
             resultArea.classList.remove('hidden');
-            output.innerHTML = '⏳ Đang phân tích dữ liệu...';
+            output.innerHTML = '⏳ Đang gửi yêu cầu phân tích tới AI...';
 
-            const apiKey = localStorage.getItem('GEMINI_API_KEY');
+            let apiKey = localStorage.getItem('GEMINI_API_KEY');
+            if (apiKey) apiKey = apiKey.trim();
 
-            if (apiKey && apiKey.length > 10) {
-                const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+            if (apiKey && apiKey.length > 15) {
+                // Thử nghiệm các endpoint chuẩn v1beta và v1
+                const endpoints = [
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+                    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+                ];
+
                 let success = false;
 
-                for (const model of models) {
+                for (const url of endpoints) {
                     try {
-                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                        const response = await fetch(url, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh chi tiết cho: "${text}". Xác định rõ: Loại từ, Thành phần câu (Subject, Verb, Object, Complement, Adverbial) và nghĩa Tiếng Việt.` }] }]
+                                contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh chi tiết cho câu: "${text}". Liệt kê thành phần: Subject, Verb, Object, Complement, Adverbial và giải thích ngắn bằng tiếng Việt.` }] }]
                             })
                         });
 
-                        if (!response.ok) {
-                            console.warn(`Model ${model} trả về lỗi HTTP: ${response.status}`);
-                            continue;
-                        }
-
                         const data = await response.json();
 
-                        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                        if (response.ok && data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
                             output.innerHTML = data.candidates[0].content.parts[0].text;
                             success = true;
                             break;
+                        } else if (data.error) {
+                            console.warn('Google API Response Error:', data.error);
                         }
                     } catch (err) {
-                        console.error(`Lỗi kết nối với model ${model}:`, err);
+                        console.error('Fetch Error:', err);
                     }
                 }
 
                 if (!success) {
-                    output.innerHTML = '⚠️ Không thể kết nối Gemini API (Có thể API Key hết hạn hoặc sai). Tự động chuyển sang phân tích Offline:\n\n';
+                    output.innerHTML = '⚠️ Khóa API Key không hợp lệ hoặc đã bị vô hiệu hóa trên Google AI Studio. Đang hiển thị bản phân tích Offline:\n\n';
                     runLocalAnalysis(text);
                 }
             } else {
-                output.innerHTML = 'ℹ️ Chưa nhập API Key. Đang chạy bộ phân tích Offline:\n\n';
+                output.innerHTML = 'ℹ️ Chưa nhập API Key hợp lệ. Đang chạy bộ phân tích Offline:\n\n';
                 runLocalAnalysis(text);
             }
         }
 
         function runLocalAnalysis(text) {
             const words = text.split(/\s+/);
-            let res = `[KẾT QUẢ PHÂN TÍCH CÚ PHÁP OFFLINE]\n`;
+            let res = `[KẾT QUẢ PHÂN TÍCH OFFLINE]\n`;
             res += `------------------------------------\n`;
-            res += `• Văn bản: "${text}"\n`;
-            res += `• Số lượng từ: ${words.length}\n`;
-            res += `• Thành phần dự đoán:\n`;
-            res += `  - Từ đầu tiên ("${words[0] || ''}"): Thường là Chủ ngữ (Subject) hoặc Từ nối.\n`;
-            if (words.length > 1) {
-                res += `  - Từ tiếp theo ("${words[1] || ''}"): Thường là Trợ động từ / Động từ chính (Verb).\n`;
-            }
-            res += `\n👉 Lưu ý: Nhấp vào "🔑 API Key" để dán API Key Gemini chuẩn từ Google AI Studio để có phân tích AI chuyên sâu.`;
+            res += `• Câu phân tích: "${text}"\n`;
+            res += `• Số từ: ${words.length}\n`;
+            res += `• Cấu trúc cơ bản: ${words[0] || ''} (Subject) + ${words[1] || ''} (Verb/Auxiliary).\n\n`;
+            res += `👉 Hãy vào https://aistudio.google.com/app/apikey để tạo lại API Key mới nếu cần dùng AI đầy đủ.`;
             
             document.getElementById('output').innerText += res;
         }
