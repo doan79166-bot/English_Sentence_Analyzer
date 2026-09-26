@@ -3,625 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Sentence Analyzer - Phân Tích Cú Pháp Tiếng Anh</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4f46e5">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3898/3898150.png">
-    
-    <!-- External Libraries -->
+    <title>English Sentence Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/dist/vis-network.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/dist/vis-network.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Lexend', sans-serif; }
-        .tree-container { width: 100%; height: 380px; border: 1px solid #334155; border-radius: 0.75rem; background-color: #0f172a; }
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white !important; color: black !important; }
-            .print-card { border: 1px solid #ccc !important; background: white !important; color: black !important; box-shadow: none !important; }
-        }
-    </style>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
-
-    <!-- Header -->
-    <header class="bg-slate-800/90 backdrop-blur border-b border-slate-700/60 sticky top-0 z-50 no-print">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/30">
-                    <i class="fa-solid fa-tree"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg text-white leading-tight">English Sentence Analyzer</h1>
-                    <p class="text-xs text-slate-400">Phân Tích Cú Pháp, Sơ Đồ Cây & Sửa Lỗi Ngữ Pháp</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="toggleModal('apiModal')" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 border border-slate-600 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-key text-amber-400"></i> <span id="apiKeyBtnText">API Key</span>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto space-y-6">
+        <!-- Header -->
+        <header class="flex justify-between items-center bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
+            <h1 class="text-xl font-bold text-indigo-400">🌲 English Sentence Analyzer</h1>
+            <div class="flex gap-2">
+                <button onclick="setApiKey()" class="bg-amber-600 hover:bg-amber-500 px-3 py-1.5 rounded-lg text-sm font-semibold transition">
+                    🔑 API Key
                 </button>
-                <span id="pwaStatus" class="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Offline Ready
+                <span class="bg-emerald-900/50 text-emerald-400 border border-emerald-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
+                    🟢 Offline Ready
                 </span>
             </div>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+        </header>
 
         <!-- Input Section -->
-        <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 md:p-6 shadow-xl backdrop-blur no-print">
+        <main class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+            <label class="block text-sm font-medium text-slate-300">Nhập câu tiếng Anh cần phân tích:</label>
+            <textarea id="inputText" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ví dụ: It is slow to get rich."></textarea>
             
-            <div class="flex items-center justify-between mb-3">
-                <label class="font-semibold text-indigo-300 text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-pen-to-square"></i> Nhập câu tiếng Anh cần phân tích:
-                </label>
-                <div class="flex items-center gap-2">
-                    <select id="sampleSelect" onchange="loadSampleSentence()" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded-lg px-2.5 py-1.5 outline-none focus:border-indigo-500">
-                        <option value="">-- Chọn câu mẫu --</option>
-                        <option value="If it rains tomorrow, we will stay at home.">1. Câu điều kiện (If it rains...)</option>
-                        <option value="Although she was tired, she completed her homework.">2. Mệnh đề nhượng bộ (Although...)</option>
-                        <option value="He go to school yesterday.">3. Câu có lỗi sai (He go to school...)</option>
-                        <option value="The reason why he failed the exam was his laziness.">4. Mệnh đề quan hệ (The reason why...)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="relative mb-3">
-                <textarea id="sentenceInput" rows="3" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl p-3.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-base" placeholder="Ví dụ: If it rains tomorrow, we will stay at home."></textarea>
-                <button onclick="startVoiceInput()" id="micBtn" class="absolute right-3 bottom-3 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-indigo-400 border border-slate-700 transition" title="Đọc ghi âm câu">
-                    <i class="fa-solid fa-microphone"></i>
+            <div class="flex justify-between items-center">
+                <button onclick="document.getElementById('inputText').value=''" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm">Clear</button>
+                <button onclick="analyzeSentence()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-lg font-semibold text-white shadow-lg transition">
+                    ✨ Phân Tích Cú Pháp
                 </button>
             </div>
+        </main>
 
-            <!-- Action Toolbar -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <button onclick="toggleModal('ocrModal')" class="px-3.5 py-2 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-600 transition flex items-center gap-2">
-                        <i class="fa-solid fa-camera text-indigo-400"></i> Chụp / Tải Ảnh (OCR)
-                    </button>
-                    <button onclick="clearInput()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-400 hover:text-slate-200 border border-slate-700 transition">
-                        <i class="fa-solid fa-rotate-left"></i> Xóa
-                    </button>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <button onclick="analyzeSentence()" id="analyzeBtn" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Phân Tích Cú Pháp
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Error Detection & Warning Banner -->
-        <div id="errorAlertCard" class="hidden bg-rose-950/40 border border-rose-500/40 rounded-2xl p-5 shadow-lg backdrop-blur">
-            <div class="flex items-start gap-3">
-                <div class="w-9 h-9 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 font-bold shrink-0">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div class="flex-1">
-                    <h3 class="font-bold text-rose-300 text-base mb-1">Phát Hiện Lỗi Ngữ Pháp / Từ Vựng trong câu</h3>
-                    <div id="errorDetails" class="text-sm text-slate-300 space-y-2 mb-3"></div>
-                    <button onclick="applyQuickFix()" id="quickFixBtn" class="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-wrench"></i> Sửa Nhanh Theo Gợi Ý
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contextual Sentence Completion Card -->
-        <div id="contextCompletionCard" class="hidden bg-slate-800/60 border border-indigo-500/30 rounded-2xl p-5 shadow-lg backdrop-blur">
-            <h3 class="font-bold text-indigo-300 text-sm mb-2 flex items-center gap-2">
-                <i class="fa-solid fa-lightbulb text-amber-400"></i> Gợi Ý Hoàn Thiện Câu Theo Ngữ Cảnh:
-            </h3>
-            <p class="text-xs text-slate-400 mb-3">Phát hiện câu dở dang / chưa hoàn chỉnh. Bạn có thể chọn mở rộng câu theo các ngữ cảnh sau:</p>
-            <div id="completionList" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
-        </div>
-
-        <!-- Results Display Section -->
-        <div id="resultsWrapper" class="hidden space-y-6">
-
-            <!-- Print/Export Header info -->
-            <div class="print-card bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 backdrop-blur">
-                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/60 pb-4 mb-4">
-                    <div>
-                        <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">BÁO CÁO PHÂN TÍCH CÚ PHÁP</span>
-                        <h2 id="resOriginalSentence" class="text-xl font-bold text-white mt-1"></h2>
-                        <p id="resVietnameseMeaning" class="text-sm text-indigo-200 mt-0.5 italic"></p>
-                    </div>
-                    <div class="flex items-center gap-2 no-print">
-                        <button onclick="speakText()" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 border border-slate-600 transition flex items-center gap-1.5">
-                            <i class="fa-solid fa-volume-high text-indigo-400"></i> Nghe đọc
-                        </button>
-                        <button onclick="exportPDF()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs text-white shadow transition flex items-center gap-1.5">
-                            <i class="fa-solid fa-file-pdf"></i> Xuất Báo Cáo PDF / In
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Sentence Structure Analysis (S-V-O-C-A) -->
-                <div class="space-y-4">
-                    <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-layer-group text-indigo-400"></i> Cấu Trúc Thành Phần Câu (S-V-O-C-A) & Thì:
-                    </h3>
-                    <div id="svocaComponents" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3"></div>
-                    <div id="tenseInfo" class="p-3 bg-slate-900/80 border border-slate-700 rounded-xl text-xs text-slate-300"></div>
-                </div>
-            </div>
-
-            <!-- Visual Tree Diagram -->
-            <div class="print-card bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 backdrop-blur">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="font-bold text-slate-200 text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-diagram-project text-indigo-400"></i> Sơ Đồ Cây Cú Pháp Phân Nhánh (Syntax Tree Diagram):
-                    </h3>
-                    <span class="text-xs text-slate-400 no-print">Dùng chuột cuộn để Zoom, kéo để di chuyển nút</span>
-                </div>
-                <div id="treeDiagram" class="tree-container"></div>
-                <div id="nodeDetailBox" class="mt-3 p-3 bg-slate-900/80 border border-slate-700/60 rounded-xl text-xs text-slate-300 hidden">
-                    <span class="font-semibold text-indigo-300" id="nodeDetailTitle"></span>: <span id="nodeDetailDesc"></span>
-                </div>
-            </div>
-
-            <!-- Vocabulary & Grammar Analysis -->
-            <div class="print-card bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 backdrop-blur">
-                <h3 class="font-bold text-slate-200 text-sm mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-book-bookmark text-indigo-400"></i> Phân Tích Từ Vựng & Từ Loại Trọng Tâm:
-                </h3>
-                <div id="vocabTableWrapper" class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-slate-300">
-                        <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
-                            <tr>
-                                <th class="p-2.5">Từ / Cụm từ</th>
-                                <th class="p-2.5">Từ loại (POS)</th>
-                                <th class="p-2.5">Nghĩa tiếng Việt</th>
-                                <th class="p-2.5">Vai trò cú pháp</th>
-                            </tr>
-                        </thead>
-                        <tbody id="vocabTbody" class="divide-y divide-slate-700/50"></tbody>
-                    </table>
-                </div>
-            </div>
-
-        </div>
-
-    </main>
-
-    <!-- Modal: API Key Configuration -->
-    <div id="apiModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-                <h3 class="font-bold text-white text-base flex items-center gap-2">
-                    <i class="fa-solid fa-key text-amber-400"></i> Cấu hình Gemini API Key
-                </h3>
-                <button onclick="toggleModal('apiModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <p class="text-xs text-slate-300 leading-relaxed">
-                Ứng dụng có thể chạy <strong>Offline 100%</strong> bằng bộ phân tích quy tắc local. Nhập Gemini API Key nếu muốn tăng độ chính xác phân tích nâng cao & nhận diện ảnh OCR tức thì.
-            </p>
-            <input type="password" id="apiKeyInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500" placeholder="AIzaSy...">
-            <div class="flex items-center justify-end gap-2 pt-2">
-                <button onclick="toggleModal('apiModal')" class="px-4 py-2 rounded-xl bg-slate-700 text-xs text-slate-300">Đóng</button>
-                <button onclick="saveApiKey()" class="px-4 py-2 rounded-xl bg-indigo-600 text-xs text-white font-medium">Lưu Key</button>
-            </div>
-        </div>
+        <!-- Result Section -->
+        <section id="resultArea" class="hidden bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+            <h2 class="text-lg font-bold text-emerald-400">Kết Quả Phân Tích</h2>
+            <div id="output" class="p-4 bg-slate-900 rounded-lg text-sm font-mono whitespace-pre-wrap border border-slate-700"></div>
+        </section>
     </div>
 
-    <!-- Modal: OCR Image Import -->
-    <div id="ocrModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-                <h3 class="font-bold text-white text-base flex items-center gap-2">
-                    <i class="fa-solid fa-camera text-indigo-400"></i> Chụp / Tải Ảnh Trích Xuất Chữ (OCR)
-                </h3>
-                <button onclick="toggleModal('ocrModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-
-            <div class="space-y-3">
-                <input type="file" id="ocrFileInput" accept="image/*" onchange="handleImageSelect(event)" class="hidden">
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="document.getElementById('ocrFileInput').click()" class="p-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900/50 text-center transition">
-                        <i class="fa-solid fa-image text-2xl text-indigo-400 mb-1"></i>
-                        <p class="text-xs text-slate-300 font-medium">Tải file ảnh lên</p>
-                    </button>
-                    <button onclick="pasteFromClipboard()" class="p-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900/50 text-center transition">
-                        <i class="fa-solid fa-paste text-2xl text-emerald-400 mb-1"></i>
-                        <p class="text-xs text-slate-300 font-medium">Dán từ Clipboard (Ctrl+V)</p>
-                    </button>
-                </div>
-
-                <div id="ocrPreviewBox" class="hidden space-y-2">
-                    <img id="ocrPreviewImg" class="max-h-48 w-full object-contain rounded-xl border border-slate-700 bg-slate-900">
-                    <div id="ocrStatus" class="text-xs text-indigo-300 flex items-center gap-2">
-                        <i class="fa-solid fa-spinner animate-spin"></i> Đang trích xuất chữ từ ảnh...
-                    </div>
-                </div>
-
-                <textarea id="ocrResultText" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500" placeholder="Chữ trích xuất từ ảnh sẽ hiển thị ở đây..."></textarea>
-            </div>
-
-            <div class="flex items-center justify-end gap-2 pt-2">
-                <button onclick="toggleModal('ocrModal')" class="px-4 py-2 rounded-xl bg-slate-700 text-xs text-slate-300">Đóng</button>
-                <button onclick="useOcrResult()" class="px-4 py-2 rounded-xl bg-indigo-600 text-xs text-white font-medium">Đưa Vào Phân Tích</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Application Script Engine -->
     <script>
-        let currentTreeNetwork = null;
-        let lastCorrection = null;
-
-        // Load saved API Key on start
-        window.addEventListener('DOMContentLoaded', () => {
-            const key = localStorage.getItem('gemini_api_key');
-            if (key) {
-                document.getElementById('apiKeyInput').value = key;
-                document.getElementById('apiKeyBtnText').innerText = 'API Key (Đã lưu)';
-            }
-        });
-
-        function toggleModal(id) {
-            document.getElementById(id).classList.toggle('hidden');
-        }
-
-        function saveApiKey() {
-            const val = document.getElementById('apiKeyInput').value.trim();
-            if (val) {
-                localStorage.setItem('gemini_api_key', val);
-                document.getElementById('apiKeyBtnText').innerText = 'API Key (Đã lưu)';
-            } else {
-                localStorage.removeItem('gemini_api_key');
-                document.getElementById('apiKeyBtnText').innerText = 'API Key';
-            }
-            toggleModal('apiModal');
-        }
-
-        function clearInput() {
-            document.getElementById('sentenceInput').value = '';
-            document.getElementById('resultsWrapper').classList.add('hidden');
-            document.getElementById('errorAlertCard').classList.add('hidden');
-            document.getElementById('contextCompletionCard').classList.add('hidden');
-        }
-
-        function loadSampleSentence() {
-            const val = document.getElementById('sampleSelect').value;
-            if (val) {
-                document.getElementById('sentenceInput').value = val;
+        function setApiKey() {
+            const currentKey = localStorage.getItem('GEMINI_API_KEY') || '';
+            const key = prompt('Nhập Gemini API Key của bạn:', currentKey);
+            if (key !== null) {
+                localStorage.setItem('GEMINI_API_KEY', key.trim());
+                alert('Đã lưu API Key thành công!');
             }
         }
 
-        // Voice Dictation
-        function startVoiceInput() {
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                alert('Trình duyệt của bạn không hỗ trợ nhận diện giọng nói Speech Recognition.');
-                return;
-            }
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.start();
-
-            const micBtn = document.getElementById('micBtn');
-            micBtn.classList.add('text-rose-500', 'animate-pulse');
-
-            recognition.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                document.getElementById('sentenceInput').value = text;
-                micBtn.classList.remove('text-rose-500', 'animate-pulse');
-            };
-
-            recognition.onerror = () => micBtn.classList.remove('text-rose-500', 'animate-pulse');
-            recognition.onend = () => micBtn.classList.remove('text-rose-500', 'animate-pulse');
-        }
-
-        // Speech Output
-        function speakText() {
-            const text = document.getElementById('resOriginalSentence').innerText;
-            if (!text) return;
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            speechSynthesis.speak(utterance);
-        }
-
-        // Export PDF
-        function exportPDF() {
-            window.print();
-        }
-
-        // Main Parser Function
         async function analyzeSentence() {
-            const sentence = document.getElementById('sentenceInput').value.trim();
-            if (!sentence) {
-                alert('Vui lòng nhập một câu tiếng Anh để phân tích!');
+            const text = document.getElementById('inputText').value.trim();
+            const resultArea = document.getElementById('resultArea');
+            const output = document.getElementById('output');
+
+            if (!text) {
+                alert('Vui lòng nhập câu tiếng Anh!');
                 return;
             }
 
-            const btn = document.getElementById('analyzeBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Đang Phân Tích...';
+            resultArea.classList.remove('hidden');
+            output.innerHTML = 'Đang phân tích cú pháp...';
 
-            const apiKey = localStorage.getItem('gemini_api_key');
+            const apiKey = localStorage.getItem('GEMINI_API_KEY');
 
             if (apiKey) {
                 try {
-                    await analyzeWithGemini(sentence, apiKey);
-                } catch (e) {
-                    console.warn('Gemini API call failed, falling back to Local Parser:', e);
-                    analyzeLocal(sentence);
-                }
-            } else {
-                analyzeLocal(sentence);
-            }
-
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Phân Tích Cú Pháp';
-        }
-
-        // Local Rule-Based NLP Parser Engine
-        function analyzeLocal(sentence) {
-            document.getElementById('errorAlertCard').classList.add('hidden');
-            document.getElementById('contextCompletionCard').classList.add('hidden');
-
-            // 1. Error Detection Check
-            if (sentence.toLowerCase().includes('he go ')) {
-                lastCorrection = sentence.replace(/he go /i, 'He went ');
-                document.getElementById('errorDetails').innerHTML = `
-                    <p>• <strong>Từ sai:</strong> <span class="text-rose-400 underline font-semibold">go</span> (Chia sai thì / động từ ngôi thứ 3 số ít).</p>
-                    <p>• <strong>Đề xuất sửa:</strong> <span class="text-emerald-400 font-semibold">went</span> (Thì quá khứ đơn) hoặc <span class="text-emerald-400 font-semibold">goes</span> (Thì hiện tại đơn).</p>
-                    <p>• <strong>Giải thích:</strong> Chủ ngữ ngôi thứ 3 số ít 'He' trong ngữ cảnh quá khứ 'yesterday' phải đi với dạng quá khứ 'went'.</p>
-                `;
-                document.getElementById('errorAlertCard').classList.remove('hidden');
-            }
-
-            // 2. Contextual Completion Check
-            if (sentence.toLowerCase().startsWith('if it rains') || sentence.toLowerCase().startsWith('although')) {
-                const completions = [
-                    { ctx: 'Giao tiếp hàng ngày', text: sentence + ', we will stay at home and watch movies.', vi: 'Chúng mình sẽ ở nhà xem phim.' },
-                    { ctx: 'Academic / IELTS', text: sentence + ', public transportation systems may experience significant delays.', vi: 'Hệ thống giao thông công cộng có thể bị trì hoãn đáng kể.' },
-                    { ctx: 'Công sở / Business', text: sentence + ', the outdoor corporate event will be rescheduled to next Monday.', vi: 'Sự kiện ngoài trời của công ty sẽ được dời sang thứ Hai tuần sau.' }
-                ];
-                renderContextCompletions(completions);
-            }
-
-            // 3. Extract SVOCA & Grammar
-            const isConditional = sentence.toLowerCase().includes('if');
-            const meaning = isConditional ? "Nếu trời mưa vào ngày mai, chúng tôi sẽ ở nhà." : "Câu đã được phân tích thành phần cú pháp và sơ đồ phân nhánh.";
-
-            document.getElementById('resOriginalSentence').innerText = sentence;
-            document.getElementById('resVietnameseMeaning').innerText = "Dịch nghĩa: " + meaning;
-
-            const components = [
-                { role: 'Chủ Ngữ (Subject - S)', val: 'If it / We', desc: 'Đại từ chỉ chủ thể hành động' },
-                { role: 'Động Từ (Verb - V)', val: 'rains / will stay', desc: 'Động từ chính & trợ động từ' },
-                { role: 'Bổ Ngữ / Trạng Ngữ (A/C)', val: 'tomorrow / at home', desc: 'Trạng ngữ chỉ thời gian & địa điểm' }
-            ];
-
-            let htmlComp = '';
-            components.forEach(c => {
-                htmlComp += `
-                    <div class="p-3 bg-slate-900/80 border border-slate-700/60 rounded-xl">
-                        <span class="text-[10px] text-indigo-400 uppercase font-semibold tracking-wider">${c.role}</span>
-                        <p class="font-bold text-white text-sm my-0.5">${c.val}</p>
-                        <p class="text-[11px] text-slate-400">${c.desc}</p>
-                    </div>
-                `;
-            });
-            document.getElementById('svocaComponents').innerHTML = htmlComp;
-            document.getElementById('tenseInfo').innerHTML = `
-                <i class="fa-solid fa-clock text-amber-400 mr-1.5"></i> <strong>Thì & Cấu Trúc:</strong> ${isConditional ? 'Câu điều kiện loại 1 (Hiện tại đơn ở mệnh đề If + Tương lai đơn ở mệnh đề chính)' : 'Cấu trúc câu hoàn chỉnh chuẩn S-V-O-A.'}
-            `;
-
-            // 4. Build Tree Diagram
-            renderTreeNodes([
-                { id: 1, label: 'Sentence (S)', title: 'Câu chính' },
-                { id: 2, label: 'Adv Clause (If...)', title: 'Mệnh đề trạng ngữ' },
-                { id: 3, label: 'Main Clause (We...)', title: 'Mệnh đề chính' },
-                { id: 4, label: 'If it rains tomorrow', title: 'Vế điều kiện' },
-                { id: 5, label: 'we will stay at home', title: 'Vế kết quả' }
-            ], [
-                { from: 1, to: 2 }, { from: 1, to: 3 },
-                { from: 2, to: 4 }, { from: 3, to: 5 }
-            ]);
-
-            // 5. Vocab Table
-            const words = sentence.split(' ');
-            let vocabHtml = '';
-            words.forEach(w => {
-                vocabHtml += `
-                    <tr>
-                        <td class="p-2.5 font-medium text-white">${w}</td>
-                        <td class="p-2.5 text-indigo-300">Word/Token</td>
-                        <td class="p-2.5 text-slate-300">Từ thành phần</td>
-                        <td class="p-2.5 text-slate-400">Cú pháp câu</td>
-                    </tr>
-                `;
-            });
-            document.getElementById('vocabTbody').innerHTML = vocabHtml;
-            document.getElementById('resultsWrapper').classList.remove('hidden');
-        }
-
-        // Gemini API Analysis Engine
-        async function analyzeWithGemini(sentence, apiKey) {
-            const prompt = `Phân tích câu tiếng Anh: "${sentence}".
-Trả về JSON gồm:
-1. vietnamese_meaning (string)
-2. is_incorrect (boolean), error_details (string nếu có)
-3. correct_sentence (string nếu sai)
-4. svoca: array of {role, val, desc}
-5. tense_info (string)
-6. context_completions: array of {ctx, text, vi} (nếu câu chưa hoàn chỉnh)
-7. tree_nodes: array of {id, label, title}
-8. tree_edges: array of {from, to}
-9. vocab: array of {word, pos, meaning, role}`;
-
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { responseMimeType: "application/json" }
-                })
-            });
-
-            const data = await res.json();
-            const text = data.candidates[0].content.parts[0].text;
-            const parsed = JSON.parse(text);
-
-            // Render Gemini Response
-            document.getElementById('resOriginalSentence').innerText = sentence;
-            document.getElementById('resVietnameseMeaning').innerText = "Dịch nghĩa: " + parsed.vietnamese_meaning;
-
-            if (parsed.is_incorrect) {
-                lastCorrection = parsed.correct_sentence;
-                document.getElementById('errorDetails').innerHTML = parsed.error_details;
-                document.getElementById('errorAlertCard').classList.remove('hidden');
-            } else {
-                document.getElementById('errorAlertCard').classList.add('hidden');
-            }
-
-            if (parsed.context_completions && parsed.context_completions.length > 0) {
-                renderContextCompletions(parsed.context_completions);
-            } else {
-                document.getElementById('contextCompletionCard').classList.add('hidden');
-            }
-
-            let htmlComp = '';
-            parsed.svoca.forEach(c => {
-                htmlComp += `
-                    <div class="p-3 bg-slate-900/80 border border-slate-700/60 rounded-xl">
-                        <span class="text-[10px] text-indigo-400 uppercase font-semibold tracking-wider">${c.role}</span>
-                        <p class="font-bold text-white text-sm my-0.5">${c.val}</p>
-                        <p class="text-[11px] text-slate-400">${c.desc}</p>
-                    </div>
-                `;
-            });
-            document.getElementById('svocaComponents').innerHTML = htmlComp;
-            document.getElementById('tenseInfo').innerHTML = `<i class="fa-solid fa-clock text-amber-400 mr-1.5"></i> <strong>Thì & Cấu Trúc:</strong> ${parsed.tense_info}`;
-
-            renderTreeNodes(parsed.tree_nodes, parsed.tree_edges);
-
-            let vocabHtml = '';
-            parsed.vocab.forEach(v => {
-                vocabHtml += `
-                    <tr>
-                        <td class="p-2.5 font-medium text-white">${v.word}</td>
-                        <td class="p-2.5 text-indigo-300">${v.pos}</td>
-                        <td class="p-2.5 text-slate-300">${v.meaning}</td>
-                        <td class="p-2.5 text-slate-400">${v.role}</td>
-                    </tr>
-                `;
-            });
-            document.getElementById('vocabTbody').innerHTML = vocabHtml;
-            document.getElementById('resultsWrapper').classList.remove('hidden');
-        }
-
-        function renderContextCompletions(list) {
-            let html = '';
-            list.forEach(item => {
-                html += `
-                    <div class="p-3 bg-slate-900/80 border border-slate-700/60 rounded-xl space-y-1.5 hover:border-indigo-500 transition">
-                        <span class="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold uppercase">${item.ctx}</span>
-                        <p class="text-xs font-semibold text-white">${item.text}</p>
-                        <p class="text-[11px] text-slate-400 italic">${item.vi}</p>
-                        <button onclick="applyCompletion('${item.text.replace(/'/g, "\'")}')" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium pt-1 flex items-center gap-1">
-                            <i class="fa-solid fa-check"></i> Chọn câu này
-                        </button>
-                    </div>
-                `;
-            });
-            document.getElementById('completionList').innerHTML = html;
-            document.getElementById('contextCompletionCard').classList.remove('hidden');
-        }
-
-        function applyCompletion(text) {
-            document.getElementById('sentenceInput').value = text;
-            analyzeSentence();
-        }
-
-        function applyQuickFix() {
-            if (lastCorrection) {
-                document.getElementById('sentenceInput').value = lastCorrection;
-                analyzeSentence();
-            }
-        }
-
-        function renderTreeNodes(nodesArray, edgesArray) {
-            const container = document.getElementById('treeDiagram');
-            container.innerHTML = '';
-            
-            const data = {
-                nodes: new vis.DataSet(nodesArray.map(n => ({ ...n, color: '#312e81', font: { color: '#ffffff', size: 14 } }))),
-                edges: new vis.DataSet(edgesArray.map(e => ({ ...e, color: '#6366f1', arrows: 'to' })))
-            };
-
-            const options = {
-                layout: { hierarchical: { direction: 'UD', sortMethod: 'directed', levelSeparation: 70 } },
-                physics: false,
-                interaction: { hover: true, zoomView: true }
-            };
-
-            currentTreeNetwork = new vis.Network(container, data, options);
-            currentTreeNetwork.on("click", function (params) {
-                if (params.nodes.length > 0) {
-                    const nodeId = params.nodes[0];
-                    const node = nodesArray.find(n => n.id === nodeId);
-                    if (node) {
-                        document.getElementById('nodeDetailTitle').innerText = node.label;
-                        document.getElementById('nodeDetailDesc').innerText = node.title || 'Thành phần cú pháp trong sơ đồ phân nhánh.';
-                        document.getElementById('nodeDetailBox').classList.remove('hidden');
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh cho câu sau: "${text}". Xác định S, V, O, C, A và giải thích cấu trúc ngắn gọn bằng tiếng Việt.` }] }]
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.candidates && data.candidates[0].content.parts[0].text) {
+                        output.innerHTML = data.candidates[0].content.parts[0].text;
+                    } else {
+                        output.innerHTML = 'Lỗi API: Không thể lấy kết quả. Vui lòng kiểm tra lại API Key.';
                     }
+                } catch (err) {
+                    output.innerHTML = 'Lỗi kết nối API. Đang chuyển sang bộ phân tích nội bộ...';
+                    localAnalyze(text);
                 }
-            });
-        }
-
-        // OCR Handlers
-        function handleImageSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            processImageOcr(file);
-        }
-
-        function pasteFromClipboard() {
-            navigator.clipboard.read().then(items => {
-                for (let item of items) {
-                    if (item.types.includes('image/png') || item.types.includes('image/jpeg')) {
-                        item.getType(item.types[0]).then(blob => processImageOcr(blob));
-                        return;
-                    }
-                }
-                alert('Không tìm thấy hình ảnh trong khay nhớ tạm.');
-            });
-        }
-
-        function processImageOcr(blob) {
-            const previewImg = document.getElementById('ocrPreviewImg');
-            previewImg.src = URL.createObjectURL(blob);
-            document.getElementById('ocrPreviewBox').classList.remove('hidden');
-
-            Tesseract.recognize(blob, 'eng', { logger: m => console.log(m) })
-                .then(({ data: { text } }) => {
-                    document.getElementById('ocrResultText').value = text.trim().replace(/
-+/g, ' ');
-                    document.getElementById('ocrStatus').innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i> Trích xuất hoàn tất!';
-                })
-                .catch(err => {
-                    console.error(err);
-                    document.getElementById('ocrStatus').innerHTML = '<span class="text-rose-400">Lỗi trích xuất ảnh!</span>';
-                });
-        }
-
-        function useOcrResult() {
-            const txt = document.getElementById('ocrResultText').value.trim();
-            if (txt) {
-                document.getElementById('sentenceInput').value = txt;
-                toggleModal('ocrModal');
+            } else {
+                localAnalyze(text);
             }
+        }
+
+        function localAnalyze(text) {
+            const words = text.split(' ');
+            let res = `[Phân tích Offline (Local Rules)]\nCâu: ${text}\n`;
+            res += `- Số từ: ${words.length}\n`;
+            res += `- Cấu trúc cơ bản: Chủ ngữ (Subject) + Động từ (Verb) + Thành phần phụ.\n`;
+            res += `\n* Gợi ý: Nhập API Key để nhận phân tích chuyên sâu và sơ đồ cây đầy đủ.`;
+            document.getElementById('output').innerText = res;
         }
     </script>
 </body>
