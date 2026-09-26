@@ -44,7 +44,7 @@
             const key = prompt('Nhập Gemini API Key từ Google AI Studio:', currentKey);
             if (key !== null) {
                 localStorage.setItem('GEMINI_API_KEY', key.trim());
-                alert('Đã lưu API Key thành công!');
+                alert('Đã lưu API Key!');
             }
         }
 
@@ -65,8 +65,8 @@
             if (apiKey) apiKey = apiKey.trim();
 
             if (apiKey && apiKey.length > 15) {
-                // Danh sách các model chính thức hiện tại của Gemini
-                const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+                // Endpoint hỗ trợ chính thức cho Free Tier
+                const models = ['gemini-2.5-flash', 'gemini-flash-latest'];
                 let success = false;
 
                 for (const model of models) {
@@ -76,7 +76,7 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh cho: "${text}". Xác định rõ các thành phần: Subject, Verb, Object, Complement, Adverbial và giải thích nghĩa Tiếng Việt.` }] }]
+                                contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh chi tiết cho câu: "${text}". Liệt kê các thành phần: Subject (S), Verb (V), Object (O), Complement (C), Adverbial (A) và giải thích ngắn bằng Tiếng Việt.` }] }]
                             })
                         });
 
@@ -86,16 +86,14 @@
                             output.innerHTML = data.candidates[0].content.parts[0].text;
                             success = true;
                             break;
-                        } else if (data.error) {
-                            console.warn(`Lỗi Model ${model}:`, data.error.message);
                         }
                     } catch (err) {
-                        console.error(`Lỗi kết nối ${model}:`, err);
+                        console.error(`Lỗi model ${model}:`, err);
                     }
                 }
 
                 if (!success) {
-                    output.innerHTML = '⚠️ Không thể gọi API (Model không khả dụng hoặc API Key lỗi). Chuyển sang phân tích Offline:\n\n';
+                    output.innerHTML = '⚠️ Không thể kết nối tới Google AI. Đang hiển thị bản phân tích Offline:\n\n';
                     runLocalAnalysis(text);
                 }
             } else {
@@ -111,7 +109,7 @@
             res += `• Câu phân tích: "${text}"\n`;
             res += `• Số từ: ${words.length}\n`;
             res += `• Thành phần cơ bản: ${words[0] || ''} (Subject) + ${words[1] || ''} (Verb).\n\n`;
-            res += `👉 Vui lòng cập nhật API Key chuẩn từ https://aistudio.google.com/app/apikey.`;
+            res += `👉 Vui lòng cập nhật lại API Key mới từ https://aistudio.google.com/app/apikey.`;
             
             document.getElementById('output').innerText += res;
         }
