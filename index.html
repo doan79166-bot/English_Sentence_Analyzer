@@ -44,7 +44,7 @@
             const key = prompt('Nhập Gemini API Key từ Google AI Studio:', currentKey);
             if (key !== null) {
                 localStorage.setItem('GEMINI_API_KEY', key.trim());
-                alert('Đã lưu API Key!');
+                alert('Đã lưu API Key thành công!');
             }
         }
 
@@ -59,17 +59,17 @@
             }
 
             resultArea.classList.remove('hidden');
-            output.innerHTML = '⏳ Đang gửi yêu cầu phân tích tới AI...';
+            output.innerHTML = '⏳ Đang gửi yêu cầu phân tích tới Gemini AI...';
 
             let apiKey = localStorage.getItem('GEMINI_API_KEY');
             if (apiKey) apiKey = apiKey.trim();
 
             if (apiKey && apiKey.length > 15) {
-                // Thử nghiệm các endpoint chuẩn v1beta và v1
+                // Danh sách các URL endpoint mới nhất dùng v1beta
                 const endpoints = [
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
-                    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
                 ];
 
                 let success = false;
@@ -80,7 +80,7 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh chi tiết cho câu: "${text}". Liệt kê thành phần: Subject, Verb, Object, Complement, Adverbial và giải thích ngắn bằng tiếng Việt.` }] }]
+                                contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh chi tiết cho câu: "${text}". Xác định rõ: Subject (S), Verb (V), Object (O), Complement (C), Adverbial (A) và giải thích nghĩa ngắn gọn bằng tiếng Việt.` }] }]
                             })
                         });
 
@@ -99,7 +99,7 @@
                 }
 
                 if (!success) {
-                    output.innerHTML = '⚠️ Khóa API Key không hợp lệ hoặc đã bị vô hiệu hóa trên Google AI Studio. Đang hiển thị bản phân tích Offline:\n\n';
+                    output.innerHTML = '⚠️ Không thể kết nối tới model AI. Đang chuyển sang chế độ phân tích Offline:\n\n';
                     runLocalAnalysis(text);
                 }
             } else {
@@ -114,8 +114,8 @@
             res += `------------------------------------\n`;
             res += `• Câu phân tích: "${text}"\n`;
             res += `• Số từ: ${words.length}\n`;
-            res += `• Cấu trúc cơ bản: ${words[0] || ''} (Subject) + ${words[1] || ''} (Verb/Auxiliary).\n\n`;
-            res += `👉 Hãy vào https://aistudio.google.com/app/apikey để tạo lại API Key mới nếu cần dùng AI đầy đủ.`;
+            res += `• Cấu trúc dự đoán: ${words[0] || ''} (Subject) + ${words[1] || ''} (Verb/Auxiliary).\n\n`;
+            res += `👉 Nhấp vào "🔑 API Key" để cập nhật API Key chính xác từ Google AI Studio.`;
             
             document.getElementById('output').innerText += res;
         }
