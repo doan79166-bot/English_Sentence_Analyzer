@@ -15,7 +15,7 @@
                     🔑 API Key
                 </button>
                 <span class="bg-emerald-900/50 text-emerald-400 border border-emerald-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
-                    🟢 Auto-Detect Model
+                    🟢 Offline Ready
                 </span>
             </div>
         </header>
@@ -48,27 +48,6 @@
             }
         }
 
-        async function getAvailableModel(apiKey) {
-            try {
-                // Truy vấn danh sách các model mà API Key của bạn thực sự hỗ trợ
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-                const data = await res.json();
-                
-                if (data.models && data.models.length > 0) {
-                    // Lọc ra các model hỗ trợ generateContent và ưu tiên dòng Flash
-                    const validModels = data.models
-                        .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
-                        .map(m => m.name.replace('models/', ''));
-                    
-                    const preferred = validModels.find(m => m.includes('flash')) || validModels[0];
-                    return preferred;
-                }
-            } catch (e) {
-                console.error("Không thể lấy danh sách model:", e);
-            }
-            return 'gemini-3.8-flash'; // Model mặc định mới nhất nếu không fetch được list
-        }
-
         async function analyzeSentence() {
             const text = document.getElementById('inputText').value.trim();
             const resultArea = document.getElementById('resultArea');
@@ -80,43 +59,39 @@
             }
 
             resultArea.classList.remove('hidden');
-            output.innerHTML = '⏳ Đang kiểm tra danh sách Model và kết nối tới Gemini AI...';
+            output.innerHTML = '⏳ Đang phân tích cú pháp với Gemini 3.8 Flash...';
 
             let apiKey = localStorage.getItem('GEMINI_API_KEY');
             if (apiKey) apiKey = apiKey.trim();
 
-            if (!apiKey || apiKey.length < 10) {
-                output.innerHTML = 'ℹ️ Chưa nhập API Key hợp lệ. Đang chạy bộ phân tích Offline:\n\n';
-                runLocalAnalysis(text);
-                return;
-            }
+            if (apiKey && apiKey.length > 15) {
+                // Gọi trực tiếp model mới nhất gemini-3.8-flash theo yêu cầu hệ thống
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+                
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh chi tiết cho câu: "${text}". Xác định rõ các thành phần: Subject (S), Verb (V), Object (O), Complement (C), Adverbial (A) và giải thích nghĩa Tiếng Việt.` }] }]
+                        })
+                    });
 
-            // 1. Tự động dò tìm model còn sống
-            const activeModel = await getAvailableModel(apiKey);
-            output.innerHTML = `⏳ Đang gửi yêu cầu phân tích tới model [${activeModel}]...`;
+                    const data = await response.json();
 
-            // 2. Gửi request phân tích câu
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${apiKey}`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh chi tiết cho câu: "${text}". Xác định rõ: Subject (S), Verb (V), Object (O), Complement (C), Adverbial (A) và giải thích nghĩa ngắn gọn bằng Tiếng Việt.` }] }]
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-                    output.innerHTML = data.candidates[0].content.parts[0].text;
-                } else if (data.error) {
-                    output.innerHTML = `⚠️ Lỗi API Google (${data.error.code}): ${data.error.message}\n\nĐang chuyển sang bản Offline:\n`;
+                    if (response.ok && data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+                        output.innerHTML = data.candidates[0].content.parts[0].text;
+                    } else if (data.error) {
+                        output.innerHTML = `⚠️ Lỗi API Google (${data.error.code}): ${data.error.message}\n\nĐang chuyển sang bản Offline:\n`;
+                        runLocalAnalysis(text);
+                    }
+                } catch (err) {
+                    console.error('Fetch Error:', err);
+                    output.innerHTML = '⚠️ Lỗi kết nối mạng. Đang chạy bộ phân tích Offline:\n\n';
                     runLocalAnalysis(text);
                 }
-            } catch (err) {
-                console.error('Fetch Error:', err);
-                output.innerHTML = '⚠️ Lỗi kết nối mạng. Đang chạy bộ phân tích Offline:\n\n';
+            } else {
+                output.innerHTML = 'ℹ️ Chưa nhập API Key hợp lệ. Đang chạy bộ phân tích Offline:\n\n';
                 runLocalAnalysis(text);
             }
         }
@@ -127,7 +102,7 @@
             res += `------------------------------------\n`;
             res += `• Câu phân tích: "${text}"\n`;
             res += `• Số từ: ${words.length}\n`;
-            res += `• Cấu trúc cơ bản: ${words[0] || ''} (Subject) + ${words[1] || ''} (Verb).\n\n`;
+            res += `• Thành phần cơ bản: ${words[0] || ''} (Subject) + ${words[1] || ''} (Verb).\n\n`;
             res += `👉 Nhấp vào "🔑 API Key" để kiểm tra hoặc nhập lại API Key từ Google AI Studio.`;
             
             document.getElementById('output').innerText += res;
