@@ -59,28 +59,24 @@
             }
 
             resultArea.classList.remove('hidden');
-            output.innerHTML = '⏳ Đang gửi yêu cầu phân tích tới Gemini AI...';
+            output.innerHTML = '⏳ Đang phân tích cú pháp với Gemini AI...';
 
             let apiKey = localStorage.getItem('GEMINI_API_KEY');
             if (apiKey) apiKey = apiKey.trim();
 
             if (apiKey && apiKey.length > 15) {
-                // Danh sách các URL endpoint mới nhất dùng v1beta
-                const endpoints = [
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
-                ];
-
+                // Danh sách các model chính thức hiện tại của Gemini
+                const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
                 let success = false;
 
-                for (const url of endpoints) {
+                for (const model of models) {
                     try {
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
                         const response = await fetch(url, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh chi tiết cho câu: "${text}". Xác định rõ: Subject (S), Verb (V), Object (O), Complement (C), Adverbial (A) và giải thích nghĩa ngắn gọn bằng tiếng Việt.` }] }]
+                                contents: [{ parts: [{ text: `Phân tích cú pháp tiếng Anh cho: "${text}". Xác định rõ các thành phần: Subject, Verb, Object, Complement, Adverbial và giải thích nghĩa Tiếng Việt.` }] }]
                             })
                         });
 
@@ -91,15 +87,15 @@
                             success = true;
                             break;
                         } else if (data.error) {
-                            console.warn('Google API Response Error:', data.error);
+                            console.warn(`Lỗi Model ${model}:`, data.error.message);
                         }
                     } catch (err) {
-                        console.error('Fetch Error:', err);
+                        console.error(`Lỗi kết nối ${model}:`, err);
                     }
                 }
 
                 if (!success) {
-                    output.innerHTML = '⚠️ Không thể kết nối tới model AI. Đang chuyển sang chế độ phân tích Offline:\n\n';
+                    output.innerHTML = '⚠️ Không thể gọi API (Model không khả dụng hoặc API Key lỗi). Chuyển sang phân tích Offline:\n\n';
                     runLocalAnalysis(text);
                 }
             } else {
@@ -114,8 +110,8 @@
             res += `------------------------------------\n`;
             res += `• Câu phân tích: "${text}"\n`;
             res += `• Số từ: ${words.length}\n`;
-            res += `• Cấu trúc dự đoán: ${words[0] || ''} (Subject) + ${words[1] || ''} (Verb/Auxiliary).\n\n`;
-            res += `👉 Nhấp vào "🔑 API Key" để cập nhật API Key chính xác từ Google AI Studio.`;
+            res += `• Thành phần cơ bản: ${words[0] || ''} (Subject) + ${words[1] || ''} (Verb).\n\n`;
+            res += `👉 Vui lòng cập nhật API Key chuẩn từ https://aistudio.google.com/app/apikey.`;
             
             document.getElementById('output').innerText += res;
         }
