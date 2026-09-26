@@ -1,0 +1,23 @@
+{
+  "short_name": "PhânTíchAnh",
+  "name": "Bộ Phân Tích Cú Pháp Tiếng Anh - Sentence Analyzer",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3898/3898150.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3898/3898150.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "description": "Ứng dụng phân tích cấu trúc, thành phần, từ vựng và sơ đồ cây ngữ pháp tiếng Anh trực quan dành cho học sinh.",
+  "lang": "vi"
+}
